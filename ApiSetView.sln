@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29123.89
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ApiSetView", "ApiSetView\ApiSetView.vcxproj", "{04243094-2DAC-4AD3-8551-3E66B061C7C0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{04243094-2DAC-4AD3-8551-3E66B061C7C0}.Debug|x64.ActiveCfg = Debug|x64
+		{04243094-2DAC-4AD3-8551-3E66B061C7C0}.Debug|x64.Build.0 = Debug|x64
+		{04243094-2DAC-4AD3-8551-3E66B061C7C0}.Debug|x86.ActiveCfg = Debug|Win32
+		{04243094-2DAC-4AD3-8551-3E66B061C7C0}.Debug|x86.Build.0 = Debug|Win32
+		{04243094-2DAC-4AD3-8551-3E66B061C7C0}.Release|x64.ActiveCfg = Release|x64
+		{04243094-2DAC-4AD3-8551-3E66B061C7C0}.Release|x64.Build.0 = Release|x64
+		{04243094-2DAC-4AD3-8551-3E66B061C7C0}.Release|x86.ActiveCfg = Release|Win32
+		{04243094-2DAC-4AD3-8551-3E66B061C7C0}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C41CA67E-0B97-48CD-8C8E-60871FC30BF2}
+	EndGlobalSection
+EndGlobal
