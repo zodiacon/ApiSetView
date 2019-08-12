@@ -75,8 +75,12 @@
     <Image Include="res\circle.ico">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="res\arrow2.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="res\ApiSets.ini" />
   </ItemGroup>
 </Project>

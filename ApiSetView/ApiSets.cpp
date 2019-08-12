@@ -49,7 +49,7 @@ bool ApiSets::IsFileExists(const wchar_t* name) const {
 	return _files.find(name) != _files.end();
 }
 
-const std::vector<std::string>& ApiSets::GetFunctionsByApiSet(const std::string& apiset) const {
+const std::vector<std::string>& ApiSets::GetFunctionsByApiSet(const CString& apiset) const {
 	static const std::vector<std::string> _empty;
 
 	auto it = _manualApiSets.find(apiset);
@@ -124,17 +124,20 @@ bool ApiSets::ParseApiSetsResource(UINT id) {
 		if (text[0] == 13) {
 			// end of api set
 			if (!name.empty()) {
-				_manualApiSets.insert({ name, functions });
+				_manualApiSets.insert({ CString(name.c_str()), functions });
 
 				functions.clear();
 				name.clear();
+				text += 2;
+				size -= 2;
 			}
 		}
 
 		if (EOF == sscanf_s(text, "%127s", buffer, 127))
 			break;
-		auto len = (int)::strlen(buffer);
+		auto len = (uint32_t)::strlen(buffer);
 		if (len == 0) {
+
 		}
 		else if (buffer[0] == '[') {
 			// api set name

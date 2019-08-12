@@ -310,6 +310,8 @@ IDI_ARROW               ICON                    "res\\arrow.ico"
 
 IDI_CIRCLE              ICON                    "res\\circle.ico"
 
+IDI_ARROW2              ICON                    "res\\arrow2.ico"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //

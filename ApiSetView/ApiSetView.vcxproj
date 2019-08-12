@@ -231,11 +231,13 @@
   <ItemGroup>
     <Image Include="res\ApiSetView.ico" />
     <Image Include="res\arrow.ico" />
+    <Image Include="res\arrow2.ico" />
     <Image Include="res\circle.ico" />
     <Image Include="res\toolbar.bmp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="res\ApiSets.ini" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

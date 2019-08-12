@@ -137,6 +137,7 @@ LRESULT CMainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/
 
 	m_Images.Create(16, 16, ILC_COLOR32 | ILC_COLOR, 2, 2);
 	m_Images.AddIcon(AtlLoadIcon(IDI_ARROW));
+	m_Images.AddIcon(AtlLoadIcon(IDI_ARROW2));
 	m_Images.AddIcon(AtlLoadIcon(IDI_CIRCLE));
 	m_ApiSetList.SetImageList(m_Images, LVSIL_SMALL);
 
@@ -242,7 +243,12 @@ LRESULT CMainFrame::OnGetDispInfo(int, LPNMHDR hdr, BOOL&) {
 				}
 			}
 			if (lv->item.mask & LVIF_IMAGE) {
-				item.iImage = m_ApiSets.IsFileExists(data.Name + L".dll") ? 0 : 1;
+				int image = 2;
+				if (m_ApiSets.IsFileExists(data.Name + L".dll"))
+					image = 0;
+				else if (!m_ApiSets.GetFunctionsByApiSet(data.Name + L".dll").empty())
+					image = 1;
+				item.iImage = image;
 			}
 			break;
 		}
@@ -258,7 +264,8 @@ LRESULT CMainFrame::OnGetDispInfo(int, LPNMHDR hdr, BOOL&) {
 					break;
 
 				case 1:		// ordinal
-					::StringCchPrintf(item.pszText, item.cchTextMax, L"%d", data.Ordinal);
+					if(data.Ordinal)
+						::StringCchPrintf(item.pszText, item.cchTextMax, L"%d", data.Ordinal);
 					break;
 
 				case 2:		// undecorated name
@@ -301,20 +308,30 @@ LRESULT CMainFrame::OnItemChanged(int, LPNMHDR hdr, BOOL&) {
 		ClearSort(IDC_EXPORTS);
 
 		m_ApiSetExportList.SetItemCount(0);
-		if (m_ApiSets.IsFileExists(item.Name + L".dll")) {
-			PEParser parser(ApiSetDir + item.Name + L".dll");
+		CString fullname = item.Name + L".dll";
+		if (m_ApiSets.IsFileExists(fullname)) {
+			PEParser parser(ApiSetDir + fullname);
 			if (parser.IsValidPE()) {
 				m_ApiSetExports = parser.GetExports();
-				const auto count = static_cast<int>(m_ApiSetExports.size());
-				m_ApiSetExportList.SetItemCount(count);
-				m_ApiSetExportList.EnableWindow(TRUE);
-				m_ApiSetExportList.RedrawItems(0, count);
-				ClearSort(IDC_APISETEXPORTS);
 			}
 		}
 		else {
-			m_ApiSetExportList.EnableWindow(FALSE);
+			const auto& functions = m_ApiSets.GetFunctionsByApiSet(fullname);
+			m_ApiSetExports.clear();
+			for (const auto& f : functions) {
+				ExportedSymbol symbol;
+				symbol.Ordinal = 0;
+				symbol.Name = f;
+				m_ApiSetExports.push_back(symbol);
+			}
+			if(m_ApiSetExports.empty())
+				m_ApiSetExportList.EnableWindow(FALSE);
 		}
+		const auto count = static_cast<int>(m_ApiSetExports.size());
+		m_ApiSetExportList.SetItemCount(count);
+		m_ApiSetExportList.EnableWindow(TRUE);
+		m_ApiSetExportList.RedrawItems(0, count);
+		ClearSort(IDC_APISETEXPORTS);
 
 		m_ExportList.LockWindowUpdate(FALSE);
 	}
