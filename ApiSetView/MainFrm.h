@@ -6,10 +6,12 @@
 
 #include "ApiSets.h"
 #include "PeParser.h"
+#include "VirtualListView.h"
 
 class CMainFrame : 
 	public CFrameWindowImpl<CMainFrame>, 
 	public CUpdateUI<CMainFrame>,
+	public CVirtualListView<CMainFrame>,
 	public CMessageFilter, public CIdleHandler
 {
 public:
@@ -19,6 +21,9 @@ public:
 
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	virtual BOOL OnIdle();
+	void DoSort(const CVirtualListView::SortInfo* si);
+	static bool CompareApiSets(const ApiSetEntry& e1, const ApiSetEntry& e2, const CVirtualListView::SortInfo*);
+	static bool CompareExports(const ExportedSymbol& e1, const ExportedSymbol& e2, const CVirtualListView::SortInfo*);
 
 	BEGIN_UPDATE_UI_MAP(CMainFrame)
 		UPDATE_ELEMENT(ID_VIEW_TOOLBAR, UPDUI_MENUPOPUP)
@@ -33,9 +38,11 @@ public:
 		COMMAND_ID_HANDLER(ID_VIEW_STATUS_BAR, OnViewStatusBar)
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAppAbout)
 		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnGetDispInfo)
+		NOTIFY_CODE_HANDLER(LVN_ODFINDITEM, OnFindItem)
 		NOTIFY_CODE_HANDLER(LVN_ITEMCHANGED, OnItemChanged)
 		CHAIN_MSG_MAP(CUpdateUI<CMainFrame>)
 		CHAIN_MSG_MAP(CFrameWindowImpl<CMainFrame>)
+		CHAIN_MSG_MAP(CVirtualListView<CMainFrame>)
 	END_MSG_MAP()
 
 // Handler prototypes (uncomment arguments if needed):
@@ -52,6 +59,7 @@ private:
 	LRESULT OnAppAbout(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnGetDispInfo(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 	LRESULT OnItemChanged(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
+	LRESULT OnFindItem(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 
 private:
 	const ApiSetEntry& GetItem(int index) const;

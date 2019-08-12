@@ -223,6 +223,7 @@
     <ClInclude Include="PeParser.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="VirtualListView.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ApiSetView.rc" />

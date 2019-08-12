@@ -53,6 +53,9 @@
     <ClInclude Include="PeParser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="VirtualListView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ApiSetView.rc">

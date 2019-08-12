@@ -7,6 +7,8 @@
 
 #include "aboutdlg.h"
 #include "MainFrm.h"
+#include <functional>
+#include <algorithm>
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (CFrameWindowImpl<CMainFrame>::PreTranslateMessage(pMsg))
@@ -18,6 +20,58 @@ BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 BOOL CMainFrame::OnIdle() {
 	UIUpdateToolBar();
 	return FALSE;
+}
+
+void CMainFrame::DoSort(const CVirtualListView::SortInfo* si) {
+	switch (si->Id) {
+		case IDC_APISET:
+			std::sort(m_Entries.begin(), m_Entries.end(), [si](auto& e1, auto& e2) { return CompareApiSets(e1, e2, si); });
+			break;
+
+		case IDC_EXPORTS:
+			std::sort(m_Symbols.begin(), m_Symbols.end(), [si](auto& e1, auto& e2) { return CompareExports(e1, e2, si); });
+			break;
+
+		case IDC_APISETEXPORTS:
+			std::sort(m_ApiSetExports.begin(), m_ApiSetExports.end(), [si](auto& e1, auto& e2) { return CompareExports(e1, e2, si); });
+			break;
+
+		default:
+			ATLASSERT(false);
+			break;
+	}
+
+}
+
+bool CMainFrame::CompareApiSets(const ApiSetEntry& e1, const ApiSetEntry& e2, const CVirtualListView::SortInfo* si) {
+	switch (si->SortColumn) {
+		case 0:		// name
+			return SortStrings(e1.Name, e2.Name, si->SortAscending);
+
+		case 1:		// host
+			return SortStrings(
+				e1.Values.empty() ? L"" : e1.Values[0], 
+				e2.Values.empty() ? L"" : e2.Values[0], 
+				si->SortAscending);
+
+	}
+	ATLASSERT(false);
+	return false;
+}
+
+bool CMainFrame::CompareExports(const ExportedSymbol& e1, const ExportedSymbol& e2, const CVirtualListView::SortInfo* si) {
+	switch (si->SortColumn) {
+		case 0:		// name
+			return SortStrings(e1.Name, e2.Name, si->SortAscending);
+
+		case 1:		// ordinal
+			return SortNumbers(e1.Ordinal, e2.Ordinal, si->SortAscending);
+
+		case 2:		// undecorated name
+			return SortStrings(e1.UndecoratedName, e2.UndecoratedName, si->SortAscending);
+	}
+	ATLASSERT(false);
+	return false;
 }
 
 LRESULT CMainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/) {
@@ -244,6 +298,7 @@ LRESULT CMainFrame::OnItemChanged(int, LPNMHDR hdr, BOOL&) {
 		m_Symbols = parser.GetExports();
 		m_ExportList.SetItemCount(static_cast<int>(m_Symbols.size()));
 		m_ExportList.RedrawItems(0, m_ExportList.GetCountPerPage());
+		ClearSort(IDC_EXPORTS);
 
 		m_ApiSetExportList.SetItemCount(0);
 		if (m_ApiSets.IsFileExists(item.Name + L".dll")) {
@@ -254,6 +309,7 @@ LRESULT CMainFrame::OnItemChanged(int, LPNMHDR hdr, BOOL&) {
 				m_ApiSetExportList.SetItemCount(count);
 				m_ApiSetExportList.EnableWindow(TRUE);
 				m_ApiSetExportList.RedrawItems(0, count);
+				ClearSort(IDC_APISETEXPORTS);
 			}
 		}
 		else {
@@ -263,4 +319,44 @@ LRESULT CMainFrame::OnItemChanged(int, LPNMHDR hdr, BOOL&) {
 		m_ExportList.LockWindowUpdate(FALSE);
 	}
 	return 0;
+}
+
+LRESULT CMainFrame::OnFindItem(int, LPNMHDR hdr, BOOL&) {
+	CListViewCtrl* pList;
+	std::function<CString(int)> pGetValue;
+
+	switch (hdr->idFrom) {
+		case IDC_APISET:
+			pList = &m_ApiSetList;
+			pGetValue = [this](int i) { return GetItem(i).Name; };
+			break;
+
+		case IDC_EXPORTS:
+			pList = &m_ExportList; 
+			pGetValue = [this](int i) { return CString(m_Symbols[i].Name.c_str()); };
+			break;
+
+		case IDC_APISETEXPORTS:
+			pList = &m_ApiSetExportList;
+			pGetValue = [this](int i) { return CString(m_ApiSetExports[i].Name.c_str()); };
+			break;
+
+		default:
+			ATLASSERT(false);
+			return -1;
+	}
+
+	auto fi = (NMLVFINDITEM*)hdr;
+	if (fi->lvfi.flags & (LVFI_PARTIAL | LVFI_SUBSTRING)) {
+		int start = fi->iStart;
+		auto count = pList->GetItemCount();
+		auto text = fi->lvfi.psz;
+		auto len = ::wcslen(text);
+		for (int i = start; i < start + count; i++) {
+			auto index = i % count;
+			if (::_wcsnicmp(pGetValue(index), text, len) == 0)
+				return index;
+		}
+	}
+	return -1;
 }
