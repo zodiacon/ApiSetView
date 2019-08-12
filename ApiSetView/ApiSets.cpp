@@ -44,6 +44,10 @@ const std::vector<ApiSetEntry>& ApiSets::GetApiSets() const {
 	return _entries;
 }
 
+bool ApiSets::IsFileExists(const wchar_t* name) const {
+	return _files.find(name) != _files.end();
+}
+
 void ApiSets::Build() {
 	auto peb = NtCurrentTeb()->ProcessEnvironmentBlock;
 	auto apiSetMap = static_cast<PAPI_SET_NAMESPACE>(peb->Reserved9[0]);
@@ -86,7 +90,7 @@ void ApiSets::SearchFiles() {
 	SearchDirectory(path, L"api-ms-win-", _files);
 }
 
-void ApiSets::SearchDirectory(const CString& directory, const CString& pattern, std::set<CString>& files) {
+void ApiSets::SearchDirectory(const CString& directory, const CString& pattern, ApiSets::FileSet& files) {
 	WIN32_FIND_DATA fd;
 	wil::unique_hfind hFind(::FindFirstFileEx(directory + L"\\*", FindExInfoBasic, &fd, FindExSearchNameMatch, nullptr, 0));
 	if (!hFind)

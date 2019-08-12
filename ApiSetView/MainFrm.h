@@ -15,7 +15,7 @@ class CMainFrame :
 public:
 	DECLARE_FRAME_WND_CLASS(NULL, IDR_MAINFRAME)
 
-	enum { IDC_APISET = 123, IDC_EXPORTS };
+	enum { IDC_APISET = 123, IDC_EXPORTS, IDC_APISETEXPORTS };
 
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	virtual BOOL OnIdle();
@@ -58,10 +58,14 @@ private:
 	CString StringVectorToString(const std::vector<CString>& strings) const;
 
 	std::vector<ApiSetEntry> m_Entries;
-	std::vector<ExportedSymbol> m_Symbols;
+	std::vector<ExportedSymbol> m_Symbols, m_ApiSetExports;
+	ApiSets m_ApiSets;
 
 	CCommandBarCtrl m_CmdBar;
-	CSplitterWindow m_splitter;
+	CSplitterWindow m_Splitter;
+	CHorSplitterWindow m_Splitter2;
 	CListViewCtrl m_ApiSetList;
-	CListViewCtrl m_ExportList;
+	CListViewCtrl m_ExportList, m_ApiSetExportList;
+	CPaneContainer m_ExportListPane, m_ApiSetExportPane;
+	CImageListManaged m_Images;
 };

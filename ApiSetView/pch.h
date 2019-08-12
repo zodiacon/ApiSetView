@@ -26,6 +26,7 @@ extern CAppModule _Module;
 #include <atlsplit.h>
 #include <winternl.h>
 #include <strsafe.h>
+#include <atlctrlx.h>
 
 #include <vector>
 #include <string>

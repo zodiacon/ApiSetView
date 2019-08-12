@@ -38,25 +38,53 @@ LRESULT CMainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/
 
 	CreateSimpleStatusBar();
 
-	m_hWndClient = m_splitter.Create(m_hWnd, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN);
-	m_ApiSetList.Create(m_splitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_OWNERDATA |
+	m_hWndClient = m_Splitter.Create(m_hWnd, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN);
+	m_Splitter2.Create(m_Splitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_BORDER);
+
+	m_ExportListPane.SetPaneContainerExtendedStyle(PANECNT_NOCLOSEBUTTON);
+	m_ExportListPane.Create(m_Splitter2, _T("Host Exports"), WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN);
+
+	m_ApiSetExportPane.SetPaneContainerExtendedStyle(PANECNT_NOCLOSEBUTTON);
+	m_ApiSetExportPane.Create(m_Splitter2, _T("API Set Exports"), WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN);
+
+	m_ApiSetList.Create(m_Splitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_OWNERDATA |
 		LVS_REPORT | LVS_SHOWSELALWAYS | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, IDC_APISET);
-	m_ExportList.Create(m_splitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_OWNERDATA |
+
+	m_ExportList.Create(m_ExportListPane, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_OWNERDATA |
 		LVS_REPORT | LVS_SHOWSELALWAYS | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, IDC_EXPORTS);
 	m_ApiSetList.SetExtendedListViewStyle(LVS_EX_DOUBLEBUFFER | LVS_EX_FULLROWSELECT, 0);
+
+	m_ApiSetExportList.Create(m_ApiSetExportPane, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | LVS_SINGLESEL | LVS_OWNERDATA |
+		LVS_REPORT | LVS_SHOWSELALWAYS | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, IDC_APISETEXPORTS);
+	m_ApiSetExportList.SetExtendedListViewStyle(LVS_EX_DOUBLEBUFFER | LVS_EX_FULLROWSELECT, 0);
+	m_ApiSetExportPane.SetClient(m_ApiSetExportList);
+
 	m_ExportList.SetExtendedListViewStyle(LVS_EX_DOUBLEBUFFER | LVS_EX_FULLROWSELECT, 0);
+	m_ExportListPane.SetClient(m_ExportList);
 
-	m_splitter.SetSplitterPanes(m_ApiSetList, m_ExportList);
-	m_splitter.SetSplitterPosPct(40);
+	m_Splitter2.SetSplitterPanes(m_ApiSetExportPane, m_ExportListPane);
+	m_Splitter2.SetSplitterPosPct(30);
 
-	m_ApiSetList.InsertColumn(0, L"API Set Name", LVCFMT_LEFT, 320);
+	m_Splitter.SetSplitterPanes(m_ApiSetList, m_Splitter2);
+	m_Splitter.SetSplitterPosPct(35);
+
+	m_ApiSetList.InsertColumn(0, L"API Set Name", LVCFMT_LEFT, 300);
 	m_ApiSetList.InsertColumn(1, L"Host(s)", LVCFMT_LEFT, 200);
-	m_ApiSetList.InsertColumn(2, L"Aliases(s)", LVCFMT_LEFT, 150);
+	//m_ApiSetList.InsertColumn(2, L"Aliases(s)", LVCFMT_LEFT, 120);
 	//m_ApiSetList.InsertColumn(3, L"Sealed?", LVCFMT_LEFT, 100);
 
-	m_ExportList.InsertColumn(0, L"Export Name", LVCFMT_LEFT, 350);
+	m_ExportList.InsertColumn(0, L"Name", LVCFMT_LEFT, 300);
 	m_ExportList.InsertColumn(1, L"Ordinal", LVCFMT_RIGHT, 80);
-	m_ExportList.InsertColumn(2, L"Undecorated Name", LVCFMT_LEFT, 350);
+	m_ExportList.InsertColumn(2, L"Undecorated Name", LVCFMT_LEFT, 300);
+
+	m_ApiSetExportList.InsertColumn(0, L"Name", LVCFMT_LEFT, 300);
+	m_ApiSetExportList.InsertColumn(1, L"Ordinal", LVCFMT_RIGHT, 80);
+	m_ApiSetExportList.InsertColumn(2, L"Undecorated Name", LVCFMT_LEFT, 300);
+
+	m_Images.Create(16, 16, ILC_COLOR32 | ILC_COLOR, 2, 2);
+	m_Images.AddIcon(AtlLoadIcon(IDI_ARROW));
+	m_Images.AddIcon(AtlLoadIcon(IDI_CIRCLE));
+	m_ApiSetList.SetImageList(m_Images, LVSIL_SMALL);
 
 	//UIAddToolBar(hWndToolBar);
 	UISetCheck(ID_VIEW_TOOLBAR, 1);
@@ -70,10 +98,9 @@ LRESULT CMainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/
 	pLoop->AddMessageFilter(this);
 	pLoop->AddIdleHandler(this);
 
-	ApiSets sets;
-	m_Entries = sets.GetApiSets();
+	m_Entries = m_ApiSets.GetApiSets();
 	m_ApiSetList.SetItemCount(static_cast<int>(m_Entries.size()));
-	sets.SearchFiles();
+	m_ApiSets.SearchFiles();
 
 	return 0;
 }
@@ -136,44 +163,55 @@ LRESULT CMainFrame::OnGetDispInfo(int, LPNMHDR hdr, BOOL&) {
 	auto index = item.iItem;
 	auto col = item.iSubItem;
 
-	if (hdr->idFrom == IDC_APISET) {
-		auto& data = GetItem(index);
+	switch (hdr->idFrom) {
+		case IDC_APISET:
+		{
+			auto& data = GetItem(index);
 
-		if (lv->item.mask & LVIF_TEXT) {
+			if (lv->item.mask & LVIF_TEXT) {
+				switch (col) {
+					case 0:		// name
+						item.pszText = (PWSTR)(PCWSTR)data.Name;
+						break;
+
+					case 1:		// hosts
+						::StringCchCopy(item.pszText, item.cchTextMax, StringVectorToString(data.Values));
+						break;
+
+					case 2:		// aliases
+						::StringCchCopy(item.pszText, item.cchTextMax, StringVectorToString(data.Aliases));
+						break;
+
+					case 3:		// sealed?
+						::StringCchCopy(item.pszText, item.cchTextMax, data.Sealed ? L"Yes" : L"No");
+						break;
+				}
+			}
+			if (lv->item.mask & LVIF_IMAGE) {
+				item.iImage = m_ApiSets.IsFileExists(data.Name + L".dll") ? 0 : 1;
+			}
+			break;
+		}
+
+		case IDC_EXPORTS:
+		case IDC_APISETEXPORTS:
+		{
+			// exports
+			const auto& data = hdr->idFrom == IDC_EXPORTS ? m_Symbols[index] : m_ApiSetExports[index];
 			switch (col) {
 				case 0:		// name
-					item.pszText = (PWSTR)(PCWSTR)data.Name;
+					::StringCchCopy(item.pszText, item.cchTextMax, CString(data.Name.c_str()));
 					break;
 
-				case 1:		// hosts
-					::StringCchCopy(item.pszText, item.cchTextMax, StringVectorToString(data.Values));
+				case 1:		// ordinal
+					::StringCchPrintf(item.pszText, item.cchTextMax, L"%d", data.Ordinal);
 					break;
 
-				case 2:		// aliases
-					::StringCchCopy(item.pszText, item.cchTextMax, StringVectorToString(data.Aliases));
-					break;
-
-				case 3:		// sealed?
-					::StringCchCopy(item.pszText, item.cchTextMax, data.Sealed ? L"Yes" : L"No");
+				case 2:		// undecorated name
+					::StringCchCopy(item.pszText, item.cchTextMax, CString(data.UndecoratedName.c_str()));
 					break;
 			}
-		}
-	}
-	else {
-		// exports
-		const auto& data = m_Symbols[index];
-		switch (col) {
-			case 0:		// name
-				::StringCchCopy(item.pszText, item.cchTextMax, CString(data.Name.c_str()));
-				break;
-
-			case 1:		// ordinal
-				::StringCchPrintf(item.pszText, item.cchTextMax, L"%d", data.Ordinal);
-				break;
-
-			case 2:		// undecorated name
-				::StringCchCopy(item.pszText, item.cchTextMax, CString(data.UndecoratedName.c_str()));
-				break;
+			break;
 		}
 	}
 
@@ -183,6 +221,12 @@ LRESULT CMainFrame::OnGetDispInfo(int, LPNMHDR hdr, BOOL&) {
 LRESULT CMainFrame::OnItemChanged(int, LPNMHDR hdr, BOOL&) {
 	if (hdr->idFrom != IDC_APISET)
 		return 0;
+
+	static WCHAR ApiSetDir[MAX_PATH];
+	if (*ApiSetDir == 0) {
+		::GetSystemDirectory(ApiSetDir, MAX_PATH);
+		::wcscat_s(ApiSetDir, L"\\downlevel\\");
+	}
 
 	static int oldSelected = -1;
 	auto selected = m_ApiSetList.GetSelectedIndex();
@@ -200,6 +244,22 @@ LRESULT CMainFrame::OnItemChanged(int, LPNMHDR hdr, BOOL&) {
 		m_Symbols = parser.GetExports();
 		m_ExportList.SetItemCount(static_cast<int>(m_Symbols.size()));
 		m_ExportList.RedrawItems(0, m_ExportList.GetCountPerPage());
+
+		m_ApiSetExportList.SetItemCount(0);
+		if (m_ApiSets.IsFileExists(item.Name + L".dll")) {
+			PEParser parser(ApiSetDir + item.Name + L".dll");
+			if (parser.IsValidPE()) {
+				m_ApiSetExports = parser.GetExports();
+				const auto count = static_cast<int>(m_ApiSetExports.size());
+				m_ApiSetExportList.SetItemCount(count);
+				m_ApiSetExportList.EnableWindow(TRUE);
+				m_ApiSetExportList.RedrawItems(0, count);
+			}
+		}
+		else {
+			m_ApiSetExportList.EnableWindow(FALSE);
+		}
+
 		m_ExportList.LockWindowUpdate(FALSE);
 	}
 	return 0;
