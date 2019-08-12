@@ -14,6 +14,7 @@ public:
 
 	const std::vector<ApiSetEntry>& GetApiSets() const;
 	bool IsFileExists(const wchar_t* name) const;
+	const std::vector<std::string>& GetFunctionsByApiSet(const std::string& apiset) const;
 
 private:
 	struct LessNoCase {
@@ -25,9 +26,11 @@ private:
 
 	void Build();
 	void SearchDirectory(const CString& directory, const CString& pattren, FileSet& files);
+	bool ParseApiSetsResource(UINT id);
 
 private:
 	std::vector<ApiSetEntry> _entries;
+	std::map<std::string, std::vector<std::string>> _manualApiSets;
 	FileSet _files;
 };
 

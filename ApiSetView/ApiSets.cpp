@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ApiSets.h"
 #include <wil\resource.h>
+#include "resource.h"
 
 #define API_SET_SCHEMA_ENTRY_FLAGS_SEALED 1
 
@@ -48,6 +49,13 @@ bool ApiSets::IsFileExists(const wchar_t* name) const {
 	return _files.find(name) != _files.end();
 }
 
+const std::vector<std::string>& ApiSets::GetFunctionsByApiSet(const std::string& apiset) const {
+	static const std::vector<std::string> _empty;
+
+	auto it = _manualApiSets.find(apiset);
+	return it == _manualApiSets.end() ? _empty : it->second;
+}
+
 void ApiSets::Build() {
 	auto peb = NtCurrentTeb()->ProcessEnvironmentBlock;
 	auto apiSetMap = static_cast<PAPI_SET_NAMESPACE>(peb->Reserved9[0]);
@@ -88,6 +96,57 @@ void ApiSets::SearchFiles() {
 	::GetSystemDirectory(path, MAX_PATH);
 	::wcscat_s(path, L"\\downlevel");
 	SearchDirectory(path, L"api-ms-win-", _files);
+
+	ParseApiSetsResource(IDR_APISETS);
+}
+
+bool ApiSets::ParseApiSetsResource(UINT id) {
+	auto hResource = ::FindResource(nullptr, MAKEINTRESOURCE(id), L"INI");
+	if (!hResource)
+		return false;
+
+	auto size = ::SizeofResource(nullptr, hResource);
+	ATLASSERT(size > 0);
+
+	auto hMem = ::LoadResource(nullptr, hResource);
+	if (!hMem)
+		return false;
+
+	auto text = (PSTR)::LockResource(hMem);
+	ATLASSERT(text);
+
+	// begin parsing
+	char buffer[128];
+
+	std::string name;
+	std::vector<std::string> functions;
+	while (size >= 0) {
+		if (text[0] == 13) {
+			// end of api set
+			if (!name.empty()) {
+				_manualApiSets.insert({ name, functions });
+
+				functions.clear();
+				name.clear();
+			}
+		}
+
+		if (EOF == sscanf_s(text, "%127s", buffer, 127))
+			break;
+		auto len = (int)::strlen(buffer);
+		if (len == 0) {
+		}
+		else if (buffer[0] == '[') {
+			// api set name
+			name = std::string(buffer + 1, ::strlen(buffer) - 2);
+		}
+		else {
+			functions.push_back(buffer);
+		}
+		text += len + 2;
+		size -= len + 2;
+	}
+	return true;
 }
 
 void ApiSets::SearchDirectory(const CString& directory, const CString& pattern, ApiSets::FileSet& files) {

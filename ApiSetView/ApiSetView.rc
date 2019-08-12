@@ -310,6 +310,14 @@ IDI_ARROW               ICON                    "res\\arrow.ico"
 
 IDI_CIRCLE              ICON                    "res\\circle.ico"
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// INI
+//
+
+IDR_APISETS             INI                     "res\\ApiSets.ini"
+
 #endif    // English (United Kingdom) resources
 /////////////////////////////////////////////////////////////////////////////
 
