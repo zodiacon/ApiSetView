@@ -157,6 +157,8 @@ LRESULT CMainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/
 	m_ApiSetList.SetItemCount(static_cast<int>(m_Entries.size()));
 	m_ApiSets.SearchFiles();
 
+	m_ApiSetList.SetFocus();
+
 	return 0;
 }
 
